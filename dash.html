@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Chair Dashboard</title>
+    <link href="" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: rgba(145, 3, 145, 0.214);
+        }
+
+        nav {
+            background-color: #4A0072;
+            color: white;
+            padding: 10px 0;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            margin: 0 20px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        .main_card {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card1, .card2, .card3, .card4 {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+        }
+
+        h3 {
+            color: #4A0072;
+            margin-bottom: 15px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4A0072;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #6A008F;
+        }
+
+        .chart-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .chart-placeholder {
+            background-color: #f0f0f0;
+            border: 1px dashed #ccc;
+            width: 80%;
+            margin: 0 auto;
+            height: 200px;
+            line-height: 200px;
+            color: #666;
+            font-size: 14px;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .main_card {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav>
+        <ul>
+            <li><center><a href="#">Smart Chair</a></center></li>
+            <li><center><a href="#">Monitor and Control the Smart Chair</a></center></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <div class="main_card">
+            <!-- Live Data Card -->
+            <div class="card1">
+                <h3>Live Data</h3>
+                <p>Ultrasonic Sensor: <span>Obstacle detection</span></p>
+                <p>IR Sensor: <span>Detecting and measuring infrared radiation</span></p>
+            </div>
+
+            <!-- Device Control Card -->
+            <div class="card2">
+                <h3>Wheel Chair Controller</h3>
+                <button onclick="sendControlCommand('Stop')">Stop</button>
+                <button onclick="sendControlCommand('Left')">Left</button>
+                <button onclick="sendControlCommand('Right')">Right</button>
+                <button onclick="sendControlCommand('Forward')">Forward</button>
+                <button onclick="sendControlCommand('Backward')">Backward</button>
+            </div>
+
+            <!-- Alerts Card -->
+            <div class="card3">
+                <h3>Alerts</h3>
+                <div id="alertsContainer"></div>
+            </div>
+
+            <!-- Image Capture Card -->
+            <div class="card4">
+                <h3>Image</h3>
+                <p>Capturing an object</p>
+            </div>
+        </div>
+
+        <!-- Live Graph Section -->
+        <div class="chart-container">
+            <h3>Live Graph (Ultrasonic Sensor)</h3>
+            <canvas id="ultrasonicChart" class="chart-placeholder"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Live Graph (IR Sensor)</h3>
+            <canvas id="irChart" class="chart-placeholder"></canvas>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        &copy; 2024 IoT Dashboard. Built for smarter living.
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const unitsMap = {
+            "Ultrasonic": "cm",
+            "IR Sensor": "units"
+        };
+
+        async function updateLiveData() {
+            try {
+                const response = await fetch('https://hackattackers-api-um3v.onrender.com/get-data');
+                const data = await response.json();
+
+                const liveDataContainer = document.getElementById('liveDataContainer');
+                liveDataContainer.innerHTML = '';
+
+                data.forEach(item => {
+                    const p = document.createElement('p');
+                    const unit = unitsMap[item.label] || '';
+                    p.textContent = `${item.label}: ${item.value} ${unit}`;
+                    liveDataContainer.appendChild(p);
+                });
+            } catch (error) {
+                console.error('Error fetching live data:', error);
+            }
+        }
+
+        async function updateAlerts() {
+            try {
+                const response = await fetch('https://hackattackers-api-um3v.onrender.com/get-alerts');
+                const alerts = await response.json();
+
+                const alertsContainer = document.getElementById('alertsContainer');
+                alertsContainer.innerHTML = '';
+
+                alerts.forEach(alert => {
+                    const div = document.createElement('div');
+                    div.className = `alert alert-${alert.type}`;
+                    div.textContent = `${alert.message} (${new Date(alert.timestamp).toLocaleTimeString()})`;
+                    alertsContainer.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error fetching alerts:', error);
+            }
+        }
+
+        function sendControlCommand(command) {
+            alert(`Command sent: ${command}`);
+        }
+
+        async function initializeCharts() {
+            const ctxUltrasonic = document.getElementById('ultrasonicChart').getContext('2d');
+            const ultrasonicChart = new Chart(ctxUltrasonic, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Ultrasonic Sensor', data: [], borderColor: 'blue' }] },
+                options: { responsive: true }
+            });
+
+            const ctxIR = document.getElementById('irChart').getContext('2d');
+            const irChart = new Chart(ctxIR, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'IR Sensor', data: [], borderColor: 'red' }] },
+                options: { responsive: true }
+            });
+
+            setInterval(async () => {
+                const response = await fetch('https://hackattackers-api-um3v.onrender.com/get-data');
+                const data = await response.json();
+
+                const ultrasonicData = data.filter(d => d.label === 'Ultrasonic');
+                const irData = data.filter(d => d.label === 'IR Sensor');
+
+                ultrasonicChart.data.labels = ultrasonicData.map(d => new Date(d.timestamp).toLocaleTimeString());
+                ultrasonicChart.data.datasets[0].data = ultrasonicData.map(d => d.value);
+                ultrasonicChart.update();
+
+                irChart.data.labels = irData.map(d => new Date(d.timestamp).toLocaleTimeString());
+                irChart.data.datasets[0].data = irData.map(d => d.value);
+                irChart.update();
+            }, 5000);
+        }
+
+        updateLiveData();
+        updateAlerts();
+        initializeCharts();
+
+        setInterval(updateLiveData, 5000);
+        setInterval(updateAlerts, 5000);
+    </script>
+</body>
+</html>
